@@ -1,99 +1,245 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { App, Menu, Notice, Plugin, TFile, TFolder } from 'obsidian';
+import { PluginSettings, DEFAULT_SETTINGS, CalendarToNotesSettingTab } from './settings';
+import { OAuthService, OAuthConfig, TokenStorage } from './services/OAuthService';
+import { GoogleCalendarClient } from './services/GoogleCalendarClient';
+import { CalendarModal } from './ui/CalendarModal';
+import { VaultAdapter } from './services/NoteWriter';
+import { OAuthTokens } from './types';
 
-// Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+/**
+ * Calendar to Notes - Obsidian Plugin
+ * Creates meeting notes from Google Calendar events.
+ */
+export default class CalendarToNotesPlugin extends Plugin {
+	settings: PluginSettings;
+	private oauthService: OAuthService | null = null;
+	private calendarClient: GoogleCalendarClient | null = null;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+		// Initialize OAuth service
+		this.initializeOAuthService();
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+		// Add settings tab
+		this.addSettingTab(new CalendarToNotesSettingTab(this.app, this));
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+		// Register folder context menu item
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu: Menu, file) => {
+				if (file instanceof TFolder) {
+					menu.addItem((item) => {
+						item
+							.setTitle('Create meeting notes from Google Calendar…')
+							.setIcon('calendar')
+							.onClick(() => this.openCalendarModal(file));
+					});
 				}
-				return false;
+			})
+		);
+
+		// Add command for opening modal
+		this.addCommand({
+			id: 'create-meeting-notes',
+			name: 'Create meeting notes from Google Calendar',
+			callback: () => {
+				// Use current folder or root
+				const activeFile = this.app.workspace.getActiveFile();
+				let folder: TFolder | null = null;
+
+				if (activeFile) {
+					const parent = activeFile.parent;
+					if (parent) {
+						folder = parent;
+					}
+				}
+
+				if (!folder) {
+					folder = this.app.vault.getRoot();
+				}
+
+				this.openCalendarModal(folder);
 			}
 		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
 	}
 
 	onunload() {
+		// Cleanup if needed
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<PluginSettings>);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+	/**
+	 * Initialize or reinitialize the OAuth service.
+	 */
+	private initializeOAuthService() {
+		const config: OAuthConfig = {
+			clientId: this.settings.googleClientId,
+			clientSecret: this.settings.googleClientSecret,
+		};
+
+		const storage: TokenStorage = {
+			getTokens: () => this.settings.oauthTokens,
+			saveTokens: async (tokens: OAuthTokens) => {
+				this.settings.oauthTokens = tokens;
+				await this.saveSettings();
+			},
+			clearTokens: async () => {
+				this.settings.oauthTokens = null;
+				await this.saveSettings();
+			},
+		};
+
+		this.oauthService = new OAuthService(config, storage);
+		this.calendarClient = new GoogleCalendarClient(this.oauthService);
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+	/**
+	 * Check if the user is authenticated with Google.
+	 */
+	isAuthenticated(): boolean {
+		return this.oauthService?.isAuthenticated() ?? false;
 	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+	/**
+	 * Start the OAuth flow to connect to Google.
+	 */
+	async startOAuthFlow() {
+		if (!this.oauthService) {
+			this.initializeOAuthService();
+		}
+
+		if (!this.oauthService) {
+			new Notice('Failed to initialize OAuth service');
+			return;
+		}
+
+		try {
+			const authUrl = this.oauthService.getAuthorizationUrl();
+
+			// Open the auth URL in the default browser
+			window.open(authUrl);
+
+			// Show instructions for the user
+			new Notice(
+				'A browser window has opened. Please authorize the app, ' +
+				'then copy the authorization code and paste it when prompted.',
+				10000
+			);
+
+			// Prompt for the authorization code
+			const code = await this.promptForAuthCode();
+			if (!code) {
+				new Notice('OAuth flow cancelled');
+				return;
+			}
+
+			// Exchange the code for tokens
+			await this.oauthService.exchangeCodeForTokens(code);
+			new Notice('Successfully connected to Google Calendar!');
+
+			// Reinitialize to ensure fresh client
+			this.initializeOAuthService();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Unknown error';
+			new Notice(`Failed to connect: ${message}`);
+		}
+	}
+
+	/**
+	 * Prompt the user to enter the authorization code.
+	 */
+	private async promptForAuthCode(): Promise<string | null> {
+		return new Promise((resolve) => {
+			const code = window.prompt(
+				'Enter the authorization code from Google:'
+			);
+			resolve(code);
+		});
+	}
+
+	/**
+	 * Disconnect from Google (clear tokens).
+	 */
+	async disconnect() {
+		if (this.oauthService) {
+			await this.oauthService.disconnect();
+			new Notice('Disconnected from Google Calendar');
+		}
+	}
+
+	/**
+	 * Open the calendar modal for a folder.
+	 */
+	private openCalendarModal(folder: TFolder) {
+		if (!this.isAuthenticated()) {
+			new Notice('Please connect to Google Calendar in settings first');
+			return;
+		}
+
+		if (!this.settings.templateNotePath) {
+			new Notice('Please configure a template note path in settings first');
+			return;
+		}
+
+		if (!this.calendarClient) {
+			new Notice('Calendar client not initialized');
+			return;
+		}
+
+		const vaultAdapter: VaultAdapter = {
+			exists: (path: string) => {
+				return this.app.vault.getAbstractFileByPath(path) !== null;
+			},
+			read: (path: string) => {
+				const file = this.app.vault.getAbstractFileByPath(path);
+				if (file instanceof TFile) {
+					// Note: This is synchronous, so we read from cache
+					const cache = this.app.metadataCache.getFileCache(file);
+					if (cache?.frontmatter) {
+						// Reconstruct basic frontmatter for matching
+						const fm = cache.frontmatter;
+						return `---\ncalendarEventId: ${fm['calendarEventId'] || ''}\ncalendarEventStart: ${fm['calendarEventStart'] || ''}\n---`;
+					}
+				}
+				return '';
+			},
+			create: async (path: string, content: string) => {
+				await this.app.vault.create(path, content);
+			},
+			modify: async (path: string, content: string) => {
+				const file = this.app.vault.getAbstractFileByPath(path);
+				if (file instanceof TFile) {
+					await this.app.vault.modify(file, content);
+				}
+			},
+			listFiles: (folderPath: string) => {
+				const folder = this.app.vault.getAbstractFileByPath(folderPath);
+				if (folder instanceof TFolder) {
+					return folder.children
+						.filter((f): f is TFile => f instanceof TFile)
+						.map(f => ({ path: f.path }));
+				}
+				return [];
+			},
+		};
+
+		const modal = new CalendarModal(
+			this.app,
+			this.settings,
+			this.calendarClient,
+			folder,
+			vaultAdapter,
+			() => {
+				// On complete callback - could refresh view if needed
+			}
+		);
+		modal.open();
 	}
 }
