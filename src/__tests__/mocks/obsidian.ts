@@ -133,6 +133,7 @@ export interface CachedMetadata {
 	frontmatter?: Record<string, unknown>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface EventRef {}
 
 export interface PluginManifest {

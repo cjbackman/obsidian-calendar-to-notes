@@ -1,4 +1,4 @@
-import { App, Modal, Setting, Notice, TFolder } from 'obsidian';
+import { App, Modal, Setting, Notice, TFolder, TFile } from 'obsidian';
 import { CalendarEvent, GoogleCalendar, TimeRangePreset, PluginSettings } from '../types';
 import { GoogleCalendarClient } from '../services/GoogleCalendarClient';
 import { TimeRangeService } from '../services/TimeRangeService';
@@ -62,7 +62,7 @@ export class CalendarModal extends Modal {
 		contentEl.empty();
 		contentEl.addClass('calendar-to-notes-modal');
 
-		contentEl.createEl('h2', { text: 'Create meeting notes from Google Calendar' });
+		contentEl.createEl('h2', { text: 'Create meeting notes' });
 		contentEl.createEl('p', {
 			text: `Target folder: ${this.targetFolder.path}`,
 			cls: 'setting-item-description',
@@ -93,7 +93,7 @@ export class CalendarModal extends Modal {
 			cls: 'mod-cta',
 		});
 		this.generateBtnEl.disabled = true;
-		this.generateBtnEl.addEventListener('click', () => this.generateNotes());
+		this.generateBtnEl.addEventListener('click', () => { void this.generateNotes(); });
 	}
 
 	onClose() {
@@ -152,9 +152,10 @@ export class CalendarModal extends Modal {
 
 		new Setting(customContainer)
 			.setName('Start date')
+			.setDesc('')
 			.addText(text => {
 				text
-					.setPlaceholder('YYYY-MM-DD')
+					.setPlaceholder('')
 					.setValue(this.customStartDate)
 					.onChange(value => {
 						this.customStartDate = value;
@@ -164,9 +165,10 @@ export class CalendarModal extends Modal {
 
 		new Setting(customContainer)
 			.setName('End date')
+			.setDesc('')
 			.addText(text => {
 				text
-					.setPlaceholder('YYYY-MM-DD')
+					.setPlaceholder('')
 					.setValue(this.customEndDate)
 					.onChange(value => {
 						this.customEndDate = value;
@@ -283,7 +285,7 @@ export class CalendarModal extends Modal {
 			const labelEl = itemEl.createEl('label');
 
 			// Event title
-			const titleEl = labelEl.createEl('span', { cls: 'event-title', text: event.title });
+			labelEl.createEl('span', { cls: 'event-title', text: event.title });
 
 			// Event time
 			const timeText = event.isAllDay
@@ -329,7 +331,7 @@ export class CalendarModal extends Modal {
 		}
 
 		const templateFile = this.app.vault.getAbstractFileByPath(this.settings.templateNotePath);
-		if (!templateFile) {
+		if (!templateFile || !(templateFile instanceof TFile)) {
 			new Notice(`Template file not found: ${this.settings.templateNotePath}`);
 			return;
 		}
@@ -341,7 +343,7 @@ export class CalendarModal extends Modal {
 
 		try {
 			// Read template
-			const template = await this.app.vault.read(templateFile as any);
+			const template = await this.app.vault.read(templateFile);
 
 			// Create note writer
 			const noteWriter = new NoteWriter(this.vaultAdapter);

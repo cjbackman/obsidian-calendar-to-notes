@@ -1,4 +1,4 @@
-import { App, Menu, Notice, Plugin, TFile, TFolder } from 'obsidian';
+import { Menu, Notice, Plugin, TFile, TFolder } from 'obsidian';
 import { PluginSettings, DEFAULT_SETTINGS, CalendarToNotesSettingTab } from './settings';
 import { OAuthService, OAuthConfig, TokenStorage } from './services/OAuthService';
 import { GoogleCalendarClient } from './services/GoogleCalendarClient';
@@ -30,7 +30,7 @@ export default class CalendarToNotesPlugin extends Plugin {
 				if (file instanceof TFolder) {
 					menu.addItem((item) => {
 						item
-							.setTitle('Create meeting notes from Google Calendar…')
+							.setTitle('Create meeting notes from calendar')
 							.setIcon('calendar')
 							.onClick(() => this.openCalendarModal(file));
 					});
@@ -41,7 +41,7 @@ export default class CalendarToNotesPlugin extends Plugin {
 		// Add command for opening modal
 		this.addCommand({
 			id: 'create-meeting-notes',
-			name: 'Create meeting notes from Google Calendar',
+			name: 'Create meeting notes from calendar',
 			callback: () => {
 				// Use current folder or root
 				const activeFile = this.app.workspace.getActiveFile();
@@ -116,7 +116,7 @@ export default class CalendarToNotesPlugin extends Plugin {
 		}
 
 		if (!this.oauthService) {
-			new Notice('Failed to initialize OAuth service');
+			new Notice('Failed to initialize authorization service');
 			return;
 		}
 
@@ -134,15 +134,15 @@ export default class CalendarToNotesPlugin extends Plugin {
 			);
 
 			// Prompt for the authorization code
-			const code = await this.promptForAuthCode();
+			const code = this.promptForAuthCode();
 			if (!code) {
-				new Notice('OAuth flow cancelled');
+				new Notice('Authorization cancelled');
 				return;
 			}
 
 			// Exchange the code for tokens
 			await this.oauthService.exchangeCodeForTokens(code);
-			new Notice('Successfully connected to Google Calendar!');
+			new Notice('Successfully connected to calendar');
 
 			// Reinitialize to ensure fresh client
 			this.initializeOAuthService();
@@ -154,14 +154,11 @@ export default class CalendarToNotesPlugin extends Plugin {
 
 	/**
 	 * Prompt the user to enter the authorization code.
+	 * Uses window.prompt which is acceptable for desktop OAuth flows.
 	 */
-	private async promptForAuthCode(): Promise<string | null> {
-		return new Promise((resolve) => {
-			const code = window.prompt(
-				'Enter the authorization code from Google:'
-			);
-			resolve(code);
-		});
+	private promptForAuthCode(): string | null {
+		// eslint-disable-next-line no-alert
+		return window.prompt('Enter the authorization code from Google:');
 	}
 
 	/**
@@ -170,7 +167,7 @@ export default class CalendarToNotesPlugin extends Plugin {
 	async disconnect() {
 		if (this.oauthService) {
 			await this.oauthService.disconnect();
-			new Notice('Disconnected from Google Calendar');
+			new Notice('Disconnected from calendar');
 		}
 	}
 
@@ -179,7 +176,7 @@ export default class CalendarToNotesPlugin extends Plugin {
 	 */
 	private openCalendarModal(folder: TFolder) {
 		if (!this.isAuthenticated()) {
-			new Notice('Please connect to Google Calendar in settings first');
+			new Notice('Please connect to calendar in settings first');
 			return;
 		}
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NoteWriter, VaultAdapter } from './NoteWriter';
-import { CalendarEvent, ConflictPolicy, NoteFrontmatter } from '../types';
+import { CalendarEvent } from '../types';
 
 describe('NoteWriter', () => {
 	let writer: NoteWriter;
@@ -62,6 +62,7 @@ Attendees: {{attendees}}
 
 			expect(result.created).toBe(true);
 			expect(result.filename).toBe('2024-03-15 - Team Standup.md');
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockVault.create).toHaveBeenCalledOnce();
 
 			const createdContent = existingFiles.get('Meetings/2024-03-15 - Team Standup.md');
@@ -100,6 +101,7 @@ calendarEventStart: 2024-03-15T09:00:00Z
 				expect(result.created).toBe(false);
 				expect(result.skipped).toBe(true);
 				expect(result.reason).toContain('already exists');
+				// eslint-disable-next-line @typescript-eslint/unbound-method
 				expect(mockVault.create).not.toHaveBeenCalled();
 			});
 
@@ -120,6 +122,7 @@ calendarEventStart: 2024-03-15T09:00:00Z
 				);
 
 				expect(result.created).toBe(true);
+				// eslint-disable-next-line @typescript-eslint/unbound-method
 				expect(mockVault.modify).toHaveBeenCalledOnce();
 			});
 

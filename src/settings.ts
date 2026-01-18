@@ -21,16 +21,16 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Calendar to Notes settings' });
-
 		// Google OAuth Section
-		containerEl.createEl('h3', { text: 'Google Calendar connection' });
+		new Setting(containerEl)
+			.setName('Google calendar connection')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Client ID')
-			.setDesc('Google OAuth Client ID from Google Cloud Console')
+			.setDesc('Your client ID')
 			.addText(text => text
-				.setPlaceholder('Enter your Client ID')
+				.setPlaceholder('Enter your client ID')
 				.setValue(this.plugin.settings.googleClientId)
 				.onChange(async (value) => {
 					this.plugin.settings.googleClientId = value;
@@ -39,10 +39,10 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Client secret')
-			.setDesc('Google OAuth Client Secret from Google Cloud Console')
+			.setDesc('Your client secret')
 			.addText(text => {
 				text
-					.setPlaceholder('Enter your Client Secret')
+					.setPlaceholder('Enter your client secret')
 					.setValue(this.plugin.settings.googleClientSecret)
 					.onChange(async (value) => {
 						this.plugin.settings.googleClientSecret = value;
@@ -67,11 +67,11 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 						});
 				} else {
 					button
-						.setButtonText('Connect to Google')
+						.setButtonText('Connect')
 						.setCta()
 						.onClick(async () => {
 							if (!this.plugin.settings.googleClientId || !this.plugin.settings.googleClientSecret) {
-								new Notice('Please enter Client ID and Client Secret first');
+								new Notice('Please enter client ID and client secret first.');
 								return;
 							}
 							await this.plugin.startOAuthFlow();
@@ -82,17 +82,19 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 		// Setup instructions
 		const infoEl = containerEl.createDiv({ cls: 'setting-item-description' });
 		infoEl.createEl('p', {
-			text: 'To connect to Google Calendar, you need to create OAuth credentials in Google Cloud Console:'
+			text: 'To connect, you need to create credentials in the cloud console.'
 		});
 		const steps = infoEl.createEl('ol');
-		steps.createEl('li', { text: 'Go to Google Cloud Console and create a new project' });
-		steps.createEl('li', { text: 'Enable the Google Calendar API' });
-		steps.createEl('li', { text: 'Create OAuth 2.0 credentials (Desktop application)' });
+		steps.createEl('li', { text: 'Go to the cloud console and create a new project.' });
+		steps.createEl('li', { text: 'Enable the calendar API.' });
+		steps.createEl('li', { text: 'Create credentials (desktop application).' });
 		steps.createEl('li', { text: `Add redirect URI: ${OAuthService.getRedirectUri()}` });
-		steps.createEl('li', { text: 'Copy the Client ID and Client Secret above' });
+		steps.createEl('li', { text: 'Copy the client ID and client secret above.' });
 
 		// Template Section
-		containerEl.createEl('h3', { text: 'Note template' });
+		new Setting(containerEl)
+			.setName('Note template')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Template note path')
@@ -116,7 +118,9 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 		varList.createEl('li', { text: '{{attendees}} - Attendees as wiki links' });
 
 		// Conflict Policy Section
-		containerEl.createEl('h3', { text: 'Note generation' });
+		new Setting(containerEl)
+			.setName('Note generation')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Conflict policy')
@@ -133,9 +137,9 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Default calendar')
-			.setDesc('Calendar ID to use by default (leave empty for primary)')
+			.setDesc('Calendar ID to use by default')
 			.addText(text => text
-				.setPlaceholder('primary')
+				.setPlaceholder('')
 				.setValue(this.plugin.settings.defaultCalendarId)
 				.onChange(async (value) => {
 					this.plugin.settings.defaultCalendarId = value;
