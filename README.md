@@ -25,7 +25,6 @@ To use this plugin, you need to create OAuth credentials in Google Cloud Console
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth client ID"
    - Choose "Desktop application" as the application type
-   - Add `http://localhost:8080/callback` as an authorized redirect URI
 5. Copy the **Client ID** and **Client Secret**
 6. In Obsidian, go to Settings → Calendar to Notes and enter your credentials
 7. Click "Connect to Google" and follow the authorization flow
@@ -45,8 +44,12 @@ Create a template note in your vault (e.g., `Templates/Meeting.md`) and set its 
 | `{{startTime}}` | Start time in HH:mm format | 09:00 |
 | `{{endTime}}` | End time in HH:mm format | 09:30 |
 | `{{attendees}}` | Attendees as Obsidian wiki links | [[Alice]], [[Bob]] |
+| `{{calendarEventId}}` | Unique event ID (for deduplication) | abc123xyz |
+| `{{calendarEventStart}}` | Event start in ISO format | 2024-03-15T09:00:00Z |
 
 Missing values resolve to an empty string.
+
+**Note**: If your template includes `{{calendarEventId}}` or `{{calendarEventStart}}` in the frontmatter, the plugin will use your template's frontmatter as-is. Otherwise, it will automatically prepend frontmatter with these values for deduplication.
 
 ### Example Template
 
