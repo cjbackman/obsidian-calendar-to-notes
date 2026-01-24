@@ -1,4 +1,6 @@
 // Mock Obsidian module for testing
+import { vi } from 'vitest';
+
 export class Plugin {
 	app: App;
 	manifest: PluginManifest;
@@ -77,8 +79,17 @@ export class Setting {
 }
 
 export class Notice {
-	constructor(_message: string, _timeout?: number) {}
+	static lastMessage: string | null = null;
+	constructor(message: string, _timeout?: number) {
+		Notice.lastMessage = message;
+	}
+	static clear() {
+		Notice.lastMessage = null;
+	}
 }
+
+// Mock requestUrl for API calls
+export const requestUrl = vi.fn();
 
 export class TFile {
 	path: string;

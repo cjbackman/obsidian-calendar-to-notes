@@ -199,6 +199,46 @@ calendarEventStart: 2024-03-15T09:00:00Z
 		});
 	});
 
+	describe('template with frontmatter variables', () => {
+		it('returns correct content when template contains calendarEventId and calendarEventStart', async () => {
+			// Template that includes the frontmatter variables directly
+			const templateWithFrontmatter = `---
+calendarEventId: {{calendarEventId}}
+calendarEventStart: {{calendarEventStart}}
+---
+
+# {{title}}
+
+Date: {{date}}
+Time: {{startTime}} - {{endTime}}
+Attendees: {{attendees}}
+`;
+
+			await writer.writeNote(
+				sampleEvent,
+				templateWithFrontmatter,
+				'Meetings',
+				'skip'
+			);
+
+			const createdContent = existingFiles.get('Meetings/2024-03-15 - Team Standup.md');
+
+			// Verify frontmatter variables were substituted correctly
+			expect(createdContent).toContain('calendarEventId: event123');
+			expect(createdContent).toContain('calendarEventStart: 2024-03-15T09:00:00Z');
+
+			// Verify regular variables were also substituted
+			expect(createdContent).toContain('# Team Standup');
+			expect(createdContent).toContain('Date: 2024-03-15');
+			expect(createdContent).toContain('Time: 09:00 - 09:30');
+
+			// Verify no duplicate frontmatter was prepended
+			// (template manages its own frontmatter when it contains calendar variables)
+			const frontmatterMatches = createdContent?.match(/---/g);
+			expect(frontmatterMatches?.length).toBe(2); // Only the template's frontmatter delimiters
+		});
+	});
+
 	describe('writeNotes', () => {
 		it('writes multiple notes and returns summary', async () => {
 			const events: CalendarEvent[] = [
