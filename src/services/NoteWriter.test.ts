@@ -156,6 +156,39 @@ calendarEventStart: 2024-03-15T09:00:00Z
 				expect(result.filename).toBe('2024-03-15 - Team Standup (3).md');
 			});
 
+			it('skips when file exists without frontmatter match (skip policy)', async () => {
+				// File exists but has no/different frontmatter (not detected by deduplication)
+				existingFiles.set('Meetings/2024-03-15 - Team Standup.md', 'no frontmatter content');
+
+				const result = await writer.writeNote(
+					sampleEvent,
+					sampleTemplate,
+					'Meetings',
+					'skip'
+				);
+
+				expect(result.created).toBe(false);
+				expect(result.skipped).toBe(true);
+				expect(result.reason).toContain('File with this name already exists');
+			});
+
+			it('overwrites when file exists without frontmatter match (overwrite policy)', async () => {
+				// File exists but has no/different frontmatter
+				existingFiles.set('Meetings/2024-03-15 - Team Standup.md', 'old content without frontmatter');
+
+				const result = await writer.writeNote(
+					sampleEvent,
+					sampleTemplate,
+					'Meetings',
+					'overwrite'
+				);
+
+				expect(result.created).toBe(true);
+				expect(result.skipped).toBe(false);
+				// eslint-disable-next-line @typescript-eslint/unbound-method
+				expect(mockVault.modify).toHaveBeenCalled();
+			});
+
 			it('detects duplicate by scanning folder for matching frontmatter', async () => {
 				// Different filename but same event ID
 				const existingContent = `---

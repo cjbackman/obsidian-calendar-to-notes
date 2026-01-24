@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventMapper } from './EventMapper';
 import { GoogleCalendarEvent } from '../types';
 
 describe('EventMapper', () => {
-	const mapper = new EventMapper();
+	let mapper: EventMapper;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mapper = new EventMapper();
+	});
 
 	afterEach(() => {
 		vi.useRealTimers();
@@ -151,6 +156,41 @@ describe('EventMapper', () => {
 			const result = mapper.mapEvent(googleEvent);
 
 			expect(result.attendees).toEqual([]);
+		});
+
+		it('handles event with missing start date and dateTime', () => {
+			const googleEvent: GoogleCalendarEvent = {
+				id: 'nodate123',
+				summary: 'Missing Date Event',
+				status: 'confirmed',
+				start: {},
+				end: {},
+			};
+
+			const result = mapper.mapEvent(googleEvent);
+
+			// Should handle gracefully with empty strings
+			expect(result.date).toBe('');
+			expect(result.startTime).toBe('');
+			expect(result.endTime).toBe('');
+			expect(result.isAllDay).toBe(true);
+		});
+
+		it('handles attendee with missing email', () => {
+			const googleEvent: GoogleCalendarEvent = {
+				id: 'noemail123',
+				summary: 'Meeting',
+				status: 'confirmed',
+				start: { dateTime: '2024-03-15T10:00:00Z' },
+				end: { dateTime: '2024-03-15T11:00:00Z' },
+				attendees: [
+					{ displayName: 'No Email Person' }, // email is undefined
+				],
+			};
+
+			const result = mapper.mapEvent(googleEvent);
+
+			expect(result.attendees[0]?.email).toBe('');
 		});
 
 		it('extracts organizer email from event', () => {

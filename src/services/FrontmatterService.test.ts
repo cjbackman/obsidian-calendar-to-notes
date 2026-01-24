@@ -126,6 +126,35 @@ customField: value
 				calendarEventStart: '2024-03-15T09:00:00Z',
 			});
 		});
+
+		it('parses single-quoted values', () => {
+			const content = `---
+calendarEventId: 'abc123'
+calendarEventStart: '2024-03-15T09:00:00Z'
+---`;
+
+			const result = service.parse(content);
+
+			expect(result).toEqual({
+				calendarEventId: 'abc123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
+			});
+		});
+
+		it('skips lines without colons', () => {
+			const content = `---
+calendarEventId: abc123
+this line has no colon
+calendarEventStart: 2024-03-15T09:00:00Z
+---`;
+
+			const result = service.parse(content);
+
+			expect(result).toEqual({
+				calendarEventId: 'abc123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
+			});
+		});
 	});
 
 	describe('prependToContent', () => {
