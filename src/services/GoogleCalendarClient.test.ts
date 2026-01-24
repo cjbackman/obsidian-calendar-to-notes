@@ -67,7 +67,7 @@ describe('GoogleCalendarClient', () => {
 			const events = await client.getEvents('primary', timeRange);
 
 			expect(requestUrl).toHaveBeenCalledOnce();
-			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0];
+			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0] as { url: string; headers: Record<string, string> };
 
 			expect(callArgs?.url).toContain('https://www.googleapis.com/calendar/v3/calendars/primary/events');
 			expect(callArgs?.url).toContain('timeMin=2024-03-15T00%3A00%3A00.000Z');
@@ -92,7 +92,7 @@ describe('GoogleCalendarClient', () => {
 
 			await client.getEvents('user@example.com', timeRange);
 
-			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0];
+			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0] as { url: string };
 			expect(callArgs?.url).toContain('calendars/user%40example.com/events');
 		});
 
@@ -124,7 +124,7 @@ describe('GoogleCalendarClient', () => {
 
 			await client.getPrimaryCalendarEvents(timeRange);
 
-			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0];
+			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0] as { url: string };
 			expect(callArgs?.url).toContain('calendars/primary/events');
 		});
 	});

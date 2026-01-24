@@ -193,7 +193,7 @@ describe('OAuthService', () => {
 
 			// Verify requestUrl was called with correct parameters
 			expect(requestUrl).toHaveBeenCalledOnce();
-			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0];
+			const callArgs = vi.mocked(requestUrl).mock.calls[0]?.[0] as { url: string; method: string; headers: Record<string, string>; body: string };
 
 			expect(callArgs).toBeDefined();
 			expect(callArgs?.url).toBe('https://oauth2.googleapis.com/token');
@@ -201,7 +201,7 @@ describe('OAuthService', () => {
 			expect(callArgs?.headers?.['Content-Type']).toBe('application/x-www-form-urlencoded');
 
 			// Parse the body to verify parameters
-			const bodyParams = new URLSearchParams(callArgs?.body as string);
+			const bodyParams = new URLSearchParams(callArgs?.body);
 			expect(bodyParams.get('client_id')).toBe('test-client-id');
 			expect(bodyParams.get('client_secret')).toBe('test-client-secret');
 			expect(bodyParams.get('code')).toBe('test-auth-code');

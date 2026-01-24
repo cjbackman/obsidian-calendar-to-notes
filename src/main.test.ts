@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Notice, requestUrl } from 'obsidian';
+import { requestUrl, Notice } from 'obsidian';
 import CalendarToNotesPlugin from './main';
 import { AuthCodeModal } from './ui/AuthCodeModal';
 
@@ -39,7 +39,7 @@ describe('CalendarToNotesPlugin', () => {
 		// Create plugin instance
 		plugin = new CalendarToNotesPlugin(
 			{ workspace: { on: vi.fn() }, vault: {}, metadataCache: {} } as never,
-			{ id: 'test', name: 'Test Plugin', version: '1.0.0' }
+			{ id: 'test', name: 'Test Plugin', version: '1.0.0', author: 'Test', minAppVersion: '1.0.0', description: 'Test' }
 		);
 
 		// Set up required settings
@@ -95,7 +95,7 @@ describe('CalendarToNotesPlugin', () => {
 			expect(onComplete).toHaveBeenCalledOnce();
 
 			// Verify success notice was shown
-			expect(Notice.lastMessage).toBe('Successfully connected to calendar');
+			expect((Notice as unknown as { lastMessage: string }).lastMessage).toBe('Successfully connected to calendar');
 		});
 
 		it('shows cancellation notice when user cancels', async () => {
@@ -108,7 +108,7 @@ describe('CalendarToNotesPlugin', () => {
 			capturedOnSubmit?.(null);
 
 			// Verify cancellation notice was shown
-			expect(Notice.lastMessage).toBe('Authorization cancelled');
+			expect((Notice as unknown as { lastMessage: string }).lastMessage).toBe('Authorization cancelled');
 
 			// Verify onComplete was NOT called
 			expect(onComplete).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe('CalendarToNotesPlugin', () => {
 			await capturedOnSubmit?.('invalid-auth-code');
 
 			// Verify error notice was shown
-			expect(Notice.lastMessage).toBe('Failed to connect: Token exchange failed');
+			expect((Notice as unknown as { lastMessage: string }).lastMessage).toBe('Failed to connect: Token exchange failed');
 
 			// Verify onComplete was NOT called
 			expect(onComplete).not.toHaveBeenCalled();
