@@ -19,6 +19,8 @@ Attendees: {{attendees}}`;
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '[[Alice]], [[Bob]]',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -42,6 +44,8 @@ Attendees: {{attendees}}`;
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '', // Empty attendees
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -62,6 +66,8 @@ This is about {{title}}.`;
 				startTime: '10:00',
 				endTime: '11:00',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T10:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -82,6 +88,8 @@ No variables here.`;
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -101,6 +109,8 @@ Unknown: {{unknown}}`;
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -124,6 +134,8 @@ Unknown: `);
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -145,6 +157,8 @@ Unknown: `);
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -163,6 +177,8 @@ Content here.`;
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -181,6 +197,8 @@ Content here.`);
 				startTime: '09:00',
 				endTime: '09:30',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15T09:00:00Z',
 			};
 
 			const result = renderer.render(template, variables);
@@ -200,6 +218,8 @@ Time: {{startTime}} - {{endTime}}`;
 				startTime: '', // All-day events have no time
 				endTime: '',
 				attendees: '',
+				calendarEventId: 'event123',
+				calendarEventStart: '2024-03-15',
 			};
 
 			const result = renderer.render(template, variables);

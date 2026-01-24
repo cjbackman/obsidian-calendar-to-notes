@@ -20,12 +20,13 @@ export interface TokenStorage {
 
 /**
  * Service for handling Google OAuth 2.0 authentication.
- * Uses authorization code flow with PKCE for desktop apps.
+ * Uses authorization code flow for desktop apps with manual code entry.
  */
 export class OAuthService {
 	private static readonly AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 	private static readonly TOKEN_URL = 'https://oauth2.googleapis.com/token';
-	private static readonly REDIRECT_URI = 'http://localhost:8080/callback';
+	// Loopback redirect - Google will show the code in the browser URL/page
+	private static readonly REDIRECT_URI = 'http://127.0.0.1';
 	private static readonly SCOPES = [
 		'https://www.googleapis.com/auth/calendar.readonly',
 		'https://www.googleapis.com/auth/calendar.events.readonly',
@@ -36,7 +37,6 @@ export class OAuthService {
 
 	private config: OAuthConfig;
 	private storage: TokenStorage;
-	private codeVerifier: string | null = null;
 
 	constructor(config: OAuthConfig, storage: TokenStorage) {
 		this.config = config;
@@ -75,12 +75,8 @@ export class OAuthService {
 
 	/**
 	 * Generate the authorization URL for the OAuth flow.
-	 * Returns the URL and stores the code verifier for later use.
 	 */
 	getAuthorizationUrl(): string {
-		this.codeVerifier = this.generateCodeVerifier();
-		const codeChallenge = this.generateCodeChallenge(this.codeVerifier);
-
 		const params = new URLSearchParams({
 			client_id: this.config.clientId,
 			redirect_uri: OAuthService.REDIRECT_URI,
@@ -88,8 +84,6 @@ export class OAuthService {
 			scope: OAuthService.SCOPES.join(' '),
 			access_type: 'offline',
 			prompt: 'consent',
-			code_challenge: codeChallenge,
-			code_challenge_method: 'S256',
 		});
 
 		return `${OAuthService.AUTH_URL}?${params.toString()}`;
@@ -99,15 +93,10 @@ export class OAuthService {
 	 * Exchange authorization code for tokens.
 	 */
 	async exchangeCodeForTokens(code: string): Promise<OAuthTokens> {
-		if (!this.codeVerifier) {
-			throw new Error('No code verifier available. Start the auth flow first.');
-		}
-
 		const params = new URLSearchParams({
 			client_id: this.config.clientId,
 			client_secret: this.config.clientSecret,
 			code,
-			code_verifier: this.codeVerifier,
 			grant_type: 'authorization_code',
 			redirect_uri: OAuthService.REDIRECT_URI,
 		});
@@ -134,7 +123,6 @@ export class OAuthService {
 		};
 
 		await this.storage.saveTokens(tokens);
-		this.codeVerifier = null;
 
 		return tokens;
 	}
@@ -178,37 +166,6 @@ export class OAuthService {
 	 */
 	async disconnect(): Promise<void> {
 		await this.storage.clearTokens();
-	}
-
-	/**
-	 * Generate a random code verifier for PKCE.
-	 */
-	private generateCodeVerifier(): string {
-		const array = new Uint8Array(32);
-		crypto.getRandomValues(array);
-		return this.base64UrlEncode(array);
-	}
-
-	/**
-	 * Generate code challenge from verifier (SHA-256 hash).
-	 */
-	private generateCodeChallenge(verifier: string): string {
-		// For synchronous operation in browser, we use a simple hash
-		// Note: In production, you'd want to use SubtleCrypto.digest()
-		// For simplicity, we'll use the plain challenge method instead of S256
-		// This is less secure but works synchronously
-		return verifier;
-	}
-
-	/**
-	 * Base64 URL encode bytes.
-	 */
-	private base64UrlEncode(bytes: Uint8Array): string {
-		const base64 = btoa(String.fromCharCode(...bytes));
-		return base64
-			.replace(/\+/g, '-')
-			.replace(/\//g, '_')
-			.replace(/=/g, '');
 	}
 
 	/**

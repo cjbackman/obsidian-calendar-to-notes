@@ -3,6 +3,7 @@ import { PluginSettings, DEFAULT_SETTINGS, CalendarToNotesSettingTab } from './s
 import { OAuthService, OAuthConfig, TokenStorage } from './services/OAuthService';
 import { GoogleCalendarClient } from './services/GoogleCalendarClient';
 import { CalendarModal } from './ui/CalendarModal';
+import { AuthCodeModal } from './ui/AuthCodeModal';
 import { VaultAdapter } from './services/NoteWriter';
 import { OAuthTokens } from './types';
 
@@ -109,8 +110,9 @@ export default class CalendarToNotesPlugin extends Plugin {
 
 	/**
 	 * Start the OAuth flow to connect to Google.
+	 * @param onComplete Optional callback when auth completes successfully
 	 */
-	async startOAuthFlow() {
+	async startOAuthFlow(onComplete?: () => void) {
 		if (!this.oauthService) {
 			this.initializeOAuthService();
 		}
@@ -120,45 +122,36 @@ export default class CalendarToNotesPlugin extends Plugin {
 			return;
 		}
 
-		try {
-			const authUrl = this.oauthService.getAuthorizationUrl();
+		const authUrl = this.oauthService.getAuthorizationUrl();
 
-			// Open the auth URL in the default browser
-			window.open(authUrl);
+		// Open the auth URL in the default browser
+		window.open(authUrl);
 
-			// Show instructions for the user
-			new Notice(
-				'A browser window has opened. Please authorize the app, ' +
-				'then copy the authorization code and paste it when prompted.',
-				10000
-			);
-
-			// Prompt for the authorization code
-			const code = this.promptForAuthCode();
+		// Show modal to enter the code
+		const oauthService = this.oauthService;
+		new AuthCodeModal(this.app, async (code) => {
 			if (!code) {
 				new Notice('Authorization cancelled');
 				return;
 			}
 
-			// Exchange the code for tokens
-			await this.oauthService.exchangeCodeForTokens(code);
-			new Notice('Successfully connected to calendar');
+			try {
+				// Exchange the code for tokens
+				await oauthService.exchangeCodeForTokens(code);
+				new Notice('Successfully connected to calendar');
 
-			// Reinitialize to ensure fresh client
-			this.initializeOAuthService();
-		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Unknown error';
-			new Notice(`Failed to connect: ${message}`);
-		}
-	}
+				// Reinitialize to ensure fresh client
+				this.initializeOAuthService();
 
-	/**
-	 * Prompt the user to enter the authorization code.
-	 * Uses window.prompt which is acceptable for desktop OAuth flows.
-	 */
-	private promptForAuthCode(): string | null {
-		// eslint-disable-next-line no-alert
-		return window.prompt('Enter the authorization code from Google:');
+				// Notify caller that auth is complete
+				if (onComplete) {
+					onComplete();
+				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : 'Unknown error';
+				new Notice(`Failed to connect: ${message}`);
+			}
+		}).open();
 	}
 
 	/**

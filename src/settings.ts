@@ -74,7 +74,9 @@ export class CalendarToNotesSettingTab extends PluginSettingTab {
 								new Notice('Please enter client ID and client secret first.');
 								return;
 							}
-							await this.plugin.startOAuthFlow();
+							await this.plugin.startOAuthFlow(() => {
+								this.display(); // Refresh settings after successful auth
+							});
 						});
 				}
 			});

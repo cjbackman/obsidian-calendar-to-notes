@@ -163,10 +163,22 @@ export class NoteWriter {
 			startTime: event.startTime,
 			endTime: event.endTime,
 			attendees: this.attendeeFormatter.formatAttendees(event.attendees),
+			calendarEventId: frontmatter.calendarEventId,
+			calendarEventStart: frontmatter.calendarEventStart,
 		};
 
-		const body = this.templateRenderer.render(template, variables);
-		return this.frontmatterService.prependToContent(frontmatter, body);
+		// Check if template has frontmatter with calendar variables
+		const hasFrontmatterVars = template.includes('{{calendarEventId}}') || 
+			                        template.includes('{{calendarEventStart}}');
+
+		if (hasFrontmatterVars) {
+			// Template manages its own frontmatter - just substitute variables
+			return this.templateRenderer.render(template, variables);
+		} else {
+			// Template doesn't have calendar frontmatter - prepend it
+			const body = this.templateRenderer.render(template, variables);
+			return this.frontmatterService.prependToContent(frontmatter, body);
+		}
 	}
 
 	/**

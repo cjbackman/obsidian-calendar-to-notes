@@ -7,6 +7,8 @@ export interface TemplateVariables {
 	startTime: string;
 	endTime: string;
 	attendees: string;
+	calendarEventId: string;
+	calendarEventStart: string;
 }
 
 /**
@@ -18,6 +20,8 @@ export interface TemplateVariables {
  * - {{startTime}} - Start time in HH:mm format
  * - {{endTime}} - End time in HH:mm format
  * - {{attendees}} - Formatted attendee list
+ * - {{calendarEventId}} - Unique event ID for deduplication
+ * - {{calendarEventStart}} - Event start time in ISO format
  */
 export class TemplateRenderer {
 	private static readonly VARIABLE_PATTERN = /\{\{(\w+)\}\}/g;
