@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { requestUrl, Notice } from 'obsidian';
 import CalendarToNotesPlugin from './main';
-import { AuthCodeModal } from './ui/AuthCodeModal';
 
 // Create hoisted mock for AuthCodeModal
 const mockAuthCodeModal = vi.hoisted(() => vi.fn());
@@ -89,10 +88,9 @@ describe('CalendarToNotesPlugin', () => {
 
 			// Simulate user entering a code via the captured callback
 			expect(capturedOnSubmit).not.toBeNull();
-			await capturedOnSubmit?.('valid-auth-code');
-
-			// Verify onComplete was called
-			expect(onComplete).toHaveBeenCalledOnce();
+			capturedOnSubmit?.('valid-auth-code');
+			// Wait for async callback to complete
+			await vi.waitFor(() => expect(onComplete).toHaveBeenCalled());
 
 			// Verify success notice was shown
 			expect((Notice as unknown as { lastMessage: string }).lastMessage).toBe('Successfully connected to calendar');
@@ -124,7 +122,9 @@ describe('CalendarToNotesPlugin', () => {
 
 			// Simulate user entering a code via the captured callback
 			expect(capturedOnSubmit).not.toBeNull();
-			await capturedOnSubmit?.('invalid-auth-code');
+			capturedOnSubmit?.('invalid-auth-code');
+			// Wait for async callback to complete
+			await vi.waitFor(() => expect((Notice as unknown as { lastMessage: string }).lastMessage).toContain('Failed'));
 
 			// Verify error notice was shown
 			expect((Notice as unknown as { lastMessage: string }).lastMessage).toBe('Failed to connect: Token exchange failed');

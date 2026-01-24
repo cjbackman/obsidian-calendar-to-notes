@@ -33,7 +33,7 @@ export class AuthCodeModal extends Modal {
 					.onChange(value => {
 						this.code = value.trim();
 					});
-				text.inputEl.style.width = '100%';
+				text.inputEl.addClass('auth-code-input');
 				text.inputEl.focus();
 			});
 

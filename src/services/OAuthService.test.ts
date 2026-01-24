@@ -53,6 +53,7 @@ describe('OAuthService', () => {
 		});
 
 		it('returns false when access token is empty', () => {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			vi.mocked(mockStorage.getTokens).mockReturnValue({
 				accessToken: '',
 				refreshToken: 'refresh',
@@ -62,6 +63,7 @@ describe('OAuthService', () => {
 		});
 
 		it('returns true when valid tokens exist', () => {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			vi.mocked(mockStorage.getTokens).mockReturnValue({
 				accessToken: 'valid-token',
 				refreshToken: 'refresh',
@@ -79,6 +81,7 @@ describe('OAuthService', () => {
 		});
 
 		it('returns existing token when not expired', async () => {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			vi.mocked(mockStorage.getTokens).mockReturnValue({
 				accessToken: 'valid-token',
 				refreshToken: 'refresh',
@@ -91,6 +94,7 @@ describe('OAuthService', () => {
 		});
 
 		it('refreshes token when near expiry', async () => {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			vi.mocked(mockStorage.getTokens).mockReturnValue({
 				accessToken: 'old-token',
 				refreshToken: 'refresh-token',
@@ -106,10 +110,12 @@ describe('OAuthService', () => {
 
 			const token = await oauthService.getAccessToken();
 			expect(token).toBe('new-access-token');
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockStorage.saveTokens).toHaveBeenCalled();
 		});
 
 		it('uses new refresh token if provided during refresh', async () => {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			vi.mocked(mockStorage.getTokens).mockReturnValue({
 				accessToken: 'old-token',
 				refreshToken: 'old-refresh-token',
@@ -126,6 +132,7 @@ describe('OAuthService', () => {
 
 			await oauthService.getAccessToken();
 
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockStorage.saveTokens).toHaveBeenCalledWith(
 				expect.objectContaining({
 					refreshToken: 'new-refresh-token',
@@ -134,6 +141,7 @@ describe('OAuthService', () => {
 		});
 
 		it('keeps old refresh token if not provided during refresh', async () => {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			vi.mocked(mockStorage.getTokens).mockReturnValue({
 				accessToken: 'old-token',
 				refreshToken: 'old-refresh-token',
@@ -150,6 +158,7 @@ describe('OAuthService', () => {
 
 			await oauthService.getAccessToken();
 
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockStorage.saveTokens).toHaveBeenCalledWith(
 				expect.objectContaining({
 					refreshToken: 'old-refresh-token',
@@ -161,6 +170,7 @@ describe('OAuthService', () => {
 	describe('disconnect', () => {
 		it('clears tokens from storage', async () => {
 			await oauthService.disconnect();
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockStorage.clearTokens).toHaveBeenCalledOnce();
 		});
 	});
@@ -230,7 +240,9 @@ describe('OAuthService', () => {
 
 			await oauthService.exchangeCodeForTokens('test-auth-code');
 
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockStorage.saveTokens).toHaveBeenCalledOnce();
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockStorage.saveTokens).toHaveBeenCalledWith(
 				expect.objectContaining({
 					accessToken: 'test-access-token',

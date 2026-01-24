@@ -86,3 +86,7 @@
 	padding: 0.5em;
 	border-left: 2px solid var(--background-modifier-border);
 }
+
+.auth-code-input {
+	width: 100%;
+}

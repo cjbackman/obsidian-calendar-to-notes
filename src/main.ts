@@ -127,21 +127,23 @@ export default class CalendarToNotesPlugin extends Plugin {
 		// Open the auth URL in the default browser
 		window.open(authUrl);
 
-		// Show modal to enter the code
-		const oauthService = this.oauthService;
-		new AuthCodeModal(this.app, async (code) => {
-			if (!code) {
-				new Notice('Authorization cancelled');
-				return;
-			}
+	// Show modal to enter the code
+	const oauthService = this.oauthService;
+	const reinitialize = () => this.initializeOAuthService();
+	new AuthCodeModal(this.app, (code) => {
+		if (!code) {
+			new Notice('Authorization cancelled');
+			return;
+		}
 
+		void (async () => {
 			try {
 				// Exchange the code for tokens
 				await oauthService.exchangeCodeForTokens(code);
 				new Notice('Successfully connected to calendar');
 
 				// Reinitialize to ensure fresh client
-				this.initializeOAuthService();
+				reinitialize();
 
 				// Notify caller that auth is complete
 				if (onComplete) {
@@ -151,7 +153,8 @@ export default class CalendarToNotesPlugin extends Plugin {
 				const message = error instanceof Error ? error.message : 'Unknown error';
 				new Notice(`Failed to connect: ${message}`);
 			}
-		}).open();
+		})();
+	}).open();
 	}
 
 	/**
